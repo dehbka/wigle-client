@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dehbka\WigleClient;
 
 use Dehbka\WigleClient\Contracts\RequestContract;
+use GuzzleHttp\Psr7\Uri;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
@@ -22,11 +23,10 @@ class HttpTransport
 
     public function doRequest(RequestContract $request): \stdClass
     {
-        $psrRequest = $this->requestFactory->createRequest($request->method()->value, $this->baseUri . $request->uri());
+        $uri = (new Uri($this->baseUri . $request->uri()))
+            ->withQuery(http_build_query($request->payload()));
 
-        $psrRequest = $psrRequest->withBody($this->streamFactory->createStream(
-            \json_encode($request->payload(), JSON_THROW_ON_ERROR)
-        ));
+        $psrRequest = $this->requestFactory->createRequest($request->method()->value, $uri);
 
         $psrRequest = $psrRequest->withHeader('Accept', 'application/json');
         $psrRequest = $psrRequest->withHeader('Authorization', \sprintf('Basic %s', $this->apiKey));
